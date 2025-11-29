@@ -56,3 +56,11 @@ def saida_estoque(id_produto, quantidade):
     if nova_quantidade < estoque_minimo:
         print("Atenção: Estoque abaixo do mínimo!")
     return resp
+
+def inserir_local_estoque(nome_local):
+    return supabase.table("LOCAL_ESTOQUE").insert({
+        "nome_local": nome_local
+    }).execute()
+
+def listar_locais_estoque():
+    return supabase.table("LOCAL_ESTOQUE").select("*").execute()

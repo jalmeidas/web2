@@ -17,6 +17,8 @@ def mostrar_menu():
     print("6 - Listar produtos")
     print("7 - Entrada em estoque")
     print("8 - Saída do estoque")
+    print("9 - Cadastrar local de estoque")
+    print("10 - Listar locais de estoque")
     print("0 - Sair")
 
 def main():
@@ -90,6 +92,20 @@ def main():
                 print("Estoque atualizado:", resp.data)
             except ValueError as ve:
                 print("Erro:", ve)
+
+
+        elif opcao == "9":
+            nome = input("Nome do local de estoque: ")
+            resp = db.inserir_local_estoque(nome)
+            print("Local de estoque inserido:", resp.data)
+
+        elif opcao == "10":
+            resp = db.listar_locais_estoque()
+            if resp.data:
+                for l in resp.data:
+                    print(l)
+            else:
+                print("Nenhum local de estoque encontrado.")
 
         elif opcao == "0":
             print("Saindo...")
