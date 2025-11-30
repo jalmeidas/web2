@@ -19,6 +19,11 @@ def mostrar_menu():
     print("8 - Saída do estoque")
     print("9 - Cadastrar local de estoque")
     print("10 - Listar locais de estoque")
+    print("11 - Deletar usuário")
+    print("12 - Deletar categoria")
+    print("13 - Deletar fornecedor")
+    print("14 - Deletar produto")
+    print("15 - Deletar local de estoque")
     print("0 - Sair")
 
 def main():
@@ -106,6 +111,40 @@ def main():
                     print(l)
             else:
                 print("Nenhum local de estoque encontrado.")
+
+        elif opcao == "11":
+            id_usuario = int(input("ID do usuário a deletar: "))
+            resp = db.deletar_usuario(id_usuario)
+            print("Usuário deletado:", resp.data)
+
+        elif opcao == "12":
+            id_categoria = int(input("ID da categoria a deletar: "))
+            try:
+                resp = db.deletar_categoria(id_categoria)
+                print("Categoria deletada:", resp.data)
+            except ValueError as ve:
+                print("Erro:", ve)
+
+        elif opcao == "13":
+            id_fornecedor = int(input("ID do fornecedor a deletar: "))
+            try:
+                resp = db.deletar_fornecedor(id_fornecedor)
+                print("Fornecedor deletado:", resp.data)
+            except ValueError as ve:
+                print("Erro:", ve)
+
+        elif opcao == "14":
+            id_produto = int(input("ID do produto a deletar: "))
+            resp = db.deletar_produto(id_produto)
+            print("Produto deletado:", resp.data)
+
+        elif opcao == "15":
+            id_local = int(input("ID do local de estoque a deletar: "))
+            try:
+                resp = db.deletar_local_estoque(id_local)
+                print("Local de estoque deletado:", resp.data)
+            except ValueError as ve:
+                print("Erro:", ve)
 
         elif opcao == "0":
             print("Saindo...")

@@ -1,4 +1,5 @@
 from supabase import Client
+from postgrest.exceptions import APIError
 
 supabase: Client = None
 
@@ -64,3 +65,27 @@ def inserir_local_estoque(nome_local):
 
 def listar_locais_estoque():
     return supabase.table("LOCAL_ESTOQUE").select("*").execute()
+
+def deletar_usuario(id_usuario):
+    return supabase.table("USUARIOS").delete().eq("id", id_usuario).execute()
+
+def deletar_categoria(id_categoria):
+    try:
+        return supabase.table("CATEGORIA").delete().eq("id", id_categoria).execute()
+    except APIError as e:
+        raise ValueError("Não é possível deletar. Existem produtos usando esta categoria. Delete os produtos primeiro.")
+
+def deletar_fornecedor(id_fornecedor):
+    try:
+        return supabase.table("FORNECEDOR").delete().eq("id", id_fornecedor).execute()
+    except APIError as e:
+        raise ValueError("Não é possível deletar. Existem produtos usando este fornecedor. Delete os produtos primeiro.")
+
+def deletar_produto(id_produto):
+    return supabase.table("PRODUTOS").delete().eq("id", id_produto).execute()
+
+def deletar_local_estoque(id_local):
+    try:
+        return supabase.table("LOCAL_ESTOQUE").delete().eq("id", id_local).execute()
+    except APIError as e:
+        raise ValueError("Não é possível deletar. Existem produtos neste local. Delete os produtos primeiro.")
