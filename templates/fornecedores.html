@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% block title %}Fornecedores{% endblock %}
+{% block content %}
+<div class="row">
+  <div class="col-lg-4 mb-3">
+    <div class="card">
+      <div class="card-body">
+        <h5 class="card-title mb-3">Novo fornecedor</h5>
+        <form method="post">
+          <div class="mb-3">
+            <label class="form-label">Nome do fornecedor</label>
+            <input name="nome_fornecedor" class="form-control" placeholder="Ex: Dolly, Makita" required>
+          </div>
+          <button class="btn btn-success w-100">Salvar fornecedor</button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-8">
+    <div class="card">
+      <div class="card-body">
+        <h5 class="card-title mb-3">Fornecedores cadastrados ({{ fornecedores|length }})</h5>
+        {% if fornecedores %}
+        <div class="table-responsive">
+          <table class="table table-sm table-hover align-middle">
+            <thead class="table-dark">
+              <tr>
+                <th>ID</th>
+                <th>Nome</th>
+                <th>Produtos usando</th>
+                <th>Ações</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for f in fornecedores %}
+              <tr>
+                <td><strong>{{ f.id }}</strong></td>
+                <td>{{ f.nome_fornecedor }}</td>
+                <td>-</td>
+                <td>
+                  <form method="post" action="{{ url_for('deletar_fornecedor_view', id_fornecedor=f.id) }}" 
+                        class="d-inline" onsubmit="return confirm('Excluir este fornecedor?\nProdutos relacionados serão afetados.');">
+                    <button class="btn btn-sm btn-outline-danger">Excluir</button>
+                  </form>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% else %}
+        <div class="text-center py-4">
+          <p class="text-muted mb-0">Nenhum fornecedor cadastrado.</p>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

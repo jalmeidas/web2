@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% block title %}Início{% endblock %}
+{% block content %}
+<div class="mb-4">
+  <div class="d-flex align-items-center gap-3">
+    <h3>Olá, {{ session.user_name }}! 👋</h3>
+    <span class="badge bg-{{ 'success' if session.user_tipo == 1 else 'primary' }} fs-6">
+      {{ 'Operador' if session.user_tipo == 1 else 'Administrador' }}
+    </span>
+  </div>
+  <p class="text-muted mb-4">Bem-vindo ao painel de controle do estoque.</p>
+</div>
+
+<div class="row g-3">
+  <div class="col-md-3">
+    <a href="{{ url_for('produtos') }}" class="text-decoration-none">
+      <div class="card shadow-sm h-100">
+        <div class="card-body">
+          <h6 class="card-title">📦 Produtos</h6>
+          <p class="card-text small text-muted mb-0">Cadastro e estoque</p>
+        </div>
+      </div>
+    </a>
+  </div>
+  
+  <div class="col-md-3">
+    <a href="{{ url_for('locais') }}" class="text-decoration-none">
+      <div class="card shadow-sm h-100">
+        <div class="card-body">
+          <h6 class="card-title">🏭 Locais</h6>
+          <p class="card-text small text-muted mb-0">Armazenamento</p>
+        </div>
+      </div>
+    </a>
+  </div>
+  
+  <div class="col-md-3">
+    <a href="{{ url_for('fornecedores') }}" class="text-decoration-none">
+      <div class="card shadow-sm h-100">
+        <div class="card-body">
+          <h6 class="card-title">🏢 Fornecedores</h6>
+          <p class="card-text small text-muted mb-0">Parceiros</p>
+        </div>
+      </div>
+    </a>
+  </div>
+  
+  <div class="col-md-3">
+    <a href="{{ url_for('categorias') }}" class="text-decoration-none">
+      <div class="card shadow-sm h-100">
+        <div class="card-body">
+          <h6 class="card-title">📂 Categorias</h6>
+          <p class="card-text small text-muted mb-0">Organização</p>
+        </div>
+      </div>
+    </a>
+  </div>
+</div>
+{% endblock %}

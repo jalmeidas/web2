@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block title %}Login{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-md-5">
+    <div class="card shadow">
+      <div class="card-body p-4">
+        <div class="text-center mb-4">
+          <h3 class="mb-1">Bem-vindo</h3>
+          <p class="text-muted small">Faça login para gerenciar o estoque</p>
+        </div>
+
+        <form method="post">
+          <div class="mb-3">
+            <label class="form-label fw-medium">Selecionar usuário</label>
+            <select name="nome_usuario" class="form-select" required>
+              <option value="">Escolha um usuário...</option>
+              {% for usuario in usuarios %}
+              <option value="{{ usuario.nome_usuario }}">
+                {{ usuario.nome_usuario }} 
+                <span class="badge bg-{{ 'success' if usuario.tipo_usuario == 1 else 'primary' }}">
+                  {{ 'Operador' if usuario.tipo_usuario == 1 else 'Administrador' }}
+                </span>
+              </option>
+              {% endfor %}
+            </select>
+            {% if not usuarios %}
+            <div class="alert alert-warning mt-2 small mb-0">
+              Nenhum usuário cadastrado. <a href="{{ url_for('register') }}">Cadastre-se primeiro</a>
+            </div>
+            {% endif %}
+          </div>
+
+          <div class="mb-4">
+            <label class="form-label fw-medium">Senha</label>
+            <input type="password" name="senha" class="form-control" placeholder="Digite a senha" required>
+          </div>
+
+          <button class="btn btn-primary w-100 fw-medium py-2">Entrar no sistema</button>
+        </form>
+
+        <div class="text-center mt-4">
+          <p class="small text-muted mb-0">
+            Ainda não tem conta? 
+            <a href="{{ url_for('register') }}">Crie uma agora</a>
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

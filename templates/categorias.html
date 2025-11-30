@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% block title %}Categorias{% endblock %}
+{% block content %}
+<div class="row">
+  <div class="col-lg-4 mb-3">
+    <div class="card">
+      <div class="card-body">
+        <h5 class="card-title mb-3">Nova categoria</h5>
+        <form method="post">
+          <div class="mb-3">
+            <label class="form-label">Nome da categoria</label>
+            <input name="nome_categoria" class="form-control" placeholder="Ex: Eletrônicos, Alimentos" required>
+          </div>
+          <button class="btn btn-info w-100">Salvar categoria</button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-8">
+    <div class="card">
+      <div class="card-body">
+        <h5 class="card-title mb-3">Categorias cadastradas ({{ categorias|length }})</h5>
+        {% if categorias %}
+        <div class="table-responsive">
+          <table class="table table-sm table-hover align-middle">
+            <thead class="table-dark">
+              <tr>
+                <th>ID</th>
+                <th>Nome</th>
+                <th>Produtos usando</th>
+                <th>Ações</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for c in categorias %}
+              <tr>
+                <td><strong>{{ c.id }}</strong></td>
+                <td>{{ c.nome_categoria }}</td>
+                <td>-</td>
+                <td>
+                  <form method="post" action="{{ url_for('deletar_categoria_view', id_categoria=c.id) }}" 
+                        class="d-inline" onsubmit="return confirm('Excluir esta categoria?\nProdutos relacionados serão afetados.');">
+                    <button class="btn btn-sm btn-outline-danger">Excluir</button>
+                  </form>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% else %}
+        <div class="text-center py-4">
+          <p class="text-muted mb-0">Nenhuma categoria cadastrada.</p>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
