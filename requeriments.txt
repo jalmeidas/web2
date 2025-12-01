@@ -1,1 +1,4 @@
+flask
 supabase
+flask-jwt-extended
+bcrypt
