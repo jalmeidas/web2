@@ -3,7 +3,9 @@ from flask_jwt_extended import (
     jwt_required,
     create_access_token,
     get_jwt_identity,
+    get_jwt,
 )
+
 from models import db
 import bcrypt
 
@@ -17,10 +19,8 @@ def resposta_erro(mensagem, status=400):
 
 
 def require_admin():
-    identidade = get_jwt_identity()  # dict {id, tipo}
-    if not identidade or identidade.get("tipo_usuario") != 2:
-        return False
-    return True
+    claims = get_jwt()  # pega os dados extras do token (claims)
+    return claims.get("tipo_usuario") == 2
 
 
 # ---------- AUTENTICAÇÃO ----------
@@ -47,13 +47,17 @@ def api_login():
     if not bcrypt.checkpw(senha.encode("utf-8"), hash_no_banco):
         return resposta_erro("Credenciais inválidas", 401)
 
-    identidade = {
-        "id": user["id"],
+    # identity como string (id do usuário)
+    identity = str(user["id"])
+    # claims extras com tipo e nome
+    additional_claims = {
         "nome_usuario": user["nome_usuario"],
         "tipo_usuario": user["tipo_usuario"],
     }
-    token = create_access_token(identity=identidade)
+
+    token = create_access_token(identity=identity, additional_claims=additional_claims)
     return jsonify({"access_token": token}), 200
+
 
 
 # ---------- PRODUTOS (CRUD + REGRA DE NEGÓCIO) ----------
