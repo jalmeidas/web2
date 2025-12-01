@@ -113,18 +113,18 @@
                   </div>
                   
                   <!-- Forms hidden -->
-                  <form id="form-entrada-{{ p.id }}" method="post" action="{{ url_for('produtos') }}" style="display: none;">
+                  <form id="form-entrada-{{ p.id }}" method="post" action="{{ url_for('produtos_bp.produtos') }}" style="display: none;">
                     <input type="hidden" name="id_produto" value="{{ p.id }}">
                     <input type="hidden" name="acao" value="entrada">
                   </form>
-                  <form id="form-saida-{{ p.id }}" method="post" action="{{ url_for('produtos') }}" style="display: none;">
+                  <form id="form-saida-{{ p.id }}" method="post" action="{{ url_for('produtos_bp.produtos') }}" style="display: none;">
                     <input type="hidden" name="id_produto" value="{{ p.id }}">
                     <input type="hidden" name="acao" value="saida">
                   </form>
                   
                   <!-- Deletar -->
                   <div class="mt-1">
-                    <form method="post" action="{{ url_for('deletar_produto', id_produto=p.id) }}" class="d-inline">
+                    <form method="post" action="{{ url_for('produtos_bp.deletar_produto', id_produto=p.id) }}" class="d-inline">
                       <button class="btn btn-outline-danger btn-sm px-1" onclick="return confirm('Excluir?')" style="width: 35px; height: 32px;">
                         🗑️
                       </button>

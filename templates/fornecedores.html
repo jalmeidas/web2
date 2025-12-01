@@ -2,34 +2,36 @@
 {% block title %}Fornecedores{% endblock %}
 {% block content %}
 <div class="row">
-  <div class="col-lg-4 mb-3">
-    <div class="card">
-      <div class="card-body">
-        <h5 class="card-title mb-3">Novo fornecedor</h5>
+  <!-- FORMULÁRIO COMPACTO -->
+  <div class="col-md-3 mb-3">
+    <div class="card shadow-sm h-100">
+      <div class="card-header bg-success text-white">
+        <h6 class="mb-0">➕ Novo fornecedor</h6>
+      </div>
+      <div class="card-body p-2">
         <form method="post">
-          <div class="mb-3">
-            <label class="form-label">Nome do fornecedor</label>
-            <input name="nome_fornecedor" class="form-control" placeholder="Ex: Dolly, Makita" required>
+          <div class="mb-2">
+            <input name="nome_fornecedor" class="form-control form-control-sm" placeholder="Nome do fornecedor" required>
           </div>
-          <button class="btn btn-success w-100">Salvar fornecedor</button>
+          <button class="btn btn-success w-100 btn-sm">Salvar</button>
         </form>
       </div>
     </div>
   </div>
 
-  <div class="col-lg-8">
-    <div class="card">
+  <!-- TABELA -->
+  <div class="col-md-9">
+    <div class="card shadow-sm">
       <div class="card-body">
-        <h5 class="card-title mb-3">Fornecedores cadastrados ({{ fornecedores|length }})</h5>
+        <h5 class="card-title mb-3">Fornecedores ({{ fornecedores|length }})</h5>
         {% if fornecedores %}
         <div class="table-responsive">
-          <table class="table table-sm table-hover align-middle">
+          <table class="table table-sm table-hover">
             <thead class="table-dark">
               <tr>
-                <th>ID</th>
-                <th>Nome</th>
-                <th>Produtos usando</th>
-                <th>Ações</th>
+                <th style="width: 60px;">ID</th>
+                <th style="width: 300px;">Nome</th>
+                <th style="width: 120px;">Ações</th>
               </tr>
             </thead>
             <tbody>
@@ -37,11 +39,10 @@
               <tr>
                 <td><strong>{{ f.id }}</strong></td>
                 <td>{{ f.nome_fornecedor }}</td>
-                <td>-</td>
                 <td>
-                  <form method="post" action="{{ url_for('deletar_fornecedor_view', id_fornecedor=f.id) }}" 
-                        class="d-inline" onsubmit="return confirm('Excluir este fornecedor?\nProdutos relacionados serão afetados.');">
-                    <button class="btn btn-sm btn-outline-danger">Excluir</button>
+                  <form method="post" action="{{ url_for('admin_bp.deletar_fornecedor_view', id_fornecedor=f.id) }}" 
+                        class="d-inline" onsubmit="return confirm('Excluir este fornecedor?')">
+                    <button class="btn btn-outline-danger btn-sm">🗑️</button>
                   </form>
                 </td>
               </tr>
@@ -50,8 +51,9 @@
           </table>
         </div>
         {% else %}
-        <div class="text-center py-4">
-          <p class="text-muted mb-0">Nenhum fornecedor cadastrado.</p>
+        <div class="text-center py-4 text-muted">
+          <p>Nenhum fornecedor cadastrado</p>
+          <p class="small">Cadastre o primeiro acima!</p>
         </div>
         {% endif %}
       </div>

@@ -26,7 +26,7 @@
             </select>
             {% if not usuarios %}
             <div class="alert alert-warning mt-2 small mb-0">
-              Nenhum usuário cadastrado. <a href="{{ url_for('register') }}">Cadastre-se primeiro</a>
+              Nenhum usuário cadastrado. <a href="{{ url_for('auth_bp.register') }}">Cadastre-se primeiro</a>
             </div>
             {% endif %}
           </div>
@@ -42,7 +42,7 @@
         <div class="text-center mt-4">
           <p class="small text-muted mb-0">
             Ainda não tem conta? 
-            <a href="{{ url_for('register') }}">Crie uma agora</a>
+            <a href="{{ url_for('auth_bp.register') }}">Crie uma agora</a>
           </p>
         </div>
       </div>

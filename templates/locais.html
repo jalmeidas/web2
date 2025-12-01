@@ -2,23 +2,26 @@
 {% block title %}Locais de Estoque{% endblock %}
 {% block content %}
 <div class="row">
-  <div class="col-lg-4 mb-3">
-    <div class="card">
-      <div class="card-body">
-        <h5 class="card-title mb-3">Novo local de estoque</h5>
+  <!-- FORMULÁRIO COMPACTO -->
+  <div class="col-md-3 mb-3">
+    <div class="card shadow-sm h-100">
+      <div class="card-header bg-primary text-white">
+        <h6 class="mb-0">➕ Novo local de estoque</h6>
+      </div>
+      <div class="card-body p-2">
         <form method="post">
-          <div class="mb-3">
-            <label class="form-label">Nome do local</label>
-            <input name="nome_local" class="form-control" placeholder="Ex: Matriz, Depósito Norte" required>
+          <div class="mb-2">
+            <input name="nome_local" class="form-control form-control-sm" placeholder="Ex: Matriz, Depósito Norte" required>
           </div>
-          <button class="btn btn-primary w-100">Salvar local</button>
+          <button class="btn btn-primary w-100 btn-sm">Salvar</button>
         </form>
       </div>
     </div>
   </div>
 
-  <div class="col-lg-8">
-    <div class="card">
+  <!-- TABELA -->
+  <div class="col-md-9">
+    <div class="card shadow-sm">
       <div class="card-body">
         <h5 class="card-title mb-3">Locais cadastrados ({{ locais|length }})</h5>
         {% if locais %}
@@ -26,10 +29,9 @@
           <table class="table table-sm table-hover align-middle">
             <thead class="table-dark">
               <tr>
-                <th>ID</th>
-                <th>Nome</th>
-                <th>Produtos usando</th>
-                <th>Ações</th>
+                <th style="width: 60px;">ID</th>
+                <th style="width: 300px;">Nome</th>
+                <th style="width: 120px;">Ações</th>
               </tr>
             </thead>
             <tbody>
@@ -37,11 +39,10 @@
               <tr>
                 <td><strong>{{ l.id }}</strong></td>
                 <td>{{ l.nome_local }}</td>
-                <td>-</td>
                 <td>
-                  <form method="post" action="{{ url_for('deletar_local', id_local=l.id) }}" 
+                  <form method="post" action="{{ url_for('admin_bp.deletar_local', id_local=l.id) }}" 
                         class="d-inline" onsubmit="return confirm('Excluir este local?\nProdutos relacionados serão afetados.');">
-                    <button class="btn btn-sm btn-outline-danger">Excluir</button>
+                    <button class="btn btn-outline-danger btn-sm">🗑️</button>
                   </form>
                 </td>
               </tr>
@@ -50,8 +51,9 @@
           </table>
         </div>
         {% else %}
-        <div class="text-center py-4">
-          <p class="text-muted mb-0">Nenhum local cadastrado.</p>
+        <div class="text-center py-4 text-muted">
+          <p>Nenhum local cadastrado</p>
+          <p class="small">Cadastre o primeiro acima!</p>
         </div>
         {% endif %}
       </div>

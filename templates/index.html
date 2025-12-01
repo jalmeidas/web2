@@ -13,7 +13,7 @@
 
 <div class="row g-3">
   <div class="col-md-3">
-    <a href="{{ url_for('produtos') }}" class="text-decoration-none">
+    <a href="{{ url_for('produtos_bp.produtos') }}" class="text-decoration-none">
       <div class="card shadow-sm h-100">
         <div class="card-body">
           <h6 class="card-title">📦 Produtos</h6>
@@ -23,8 +23,9 @@
     </a>
   </div>
   
+  {% if session.get('user_tipo') == 2 %}
   <div class="col-md-3">
-    <a href="{{ url_for('locais') }}" class="text-decoration-none">
+    <a href="{{ url_for('admin_bp.locais') }}" class="text-decoration-none">
       <div class="card shadow-sm h-100">
         <div class="card-body">
           <h6 class="card-title">🏭 Locais</h6>
@@ -35,7 +36,7 @@
   </div>
   
   <div class="col-md-3">
-    <a href="{{ url_for('fornecedores') }}" class="text-decoration-none">
+    <a href="{{ url_for('admin_bp.fornecedores') }}" class="text-decoration-none">
       <div class="card shadow-sm h-100">
         <div class="card-body">
           <h6 class="card-title">🏢 Fornecedores</h6>
@@ -46,7 +47,7 @@
   </div>
   
   <div class="col-md-3">
-    <a href="{{ url_for('categorias') }}" class="text-decoration-none">
+    <a href="{{ url_for('admin_bp.categorias') }}" class="text-decoration-none">
       <div class="card shadow-sm h-100">
         <div class="card-body">
           <h6 class="card-title">📂 Categorias</h6>
@@ -55,5 +56,6 @@
       </div>
     </a>
   </div>
+  {% endif %}
 </div>
 {% endblock %}

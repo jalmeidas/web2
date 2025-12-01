@@ -9,7 +9,8 @@
 <body class="bg-light">
 <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
   <div class="container-fluid">
-    <a class="navbar-brand fw-bold" href="{{ url_for('index') }}">Estoque</a>
+    <!-- Corrigido para blueprint 'produtos_bp' -->
+    <a class="navbar-brand fw-bold" href="{{ url_for('produtos_bp.index') }}">Estoque</a>
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNav">
       <span class="navbar-toggler-icon"></span>
     </button>
@@ -17,31 +18,35 @@
       {% if session.get('user_id') %}
       <ul class="navbar-nav me-auto mb-2 mb-lg-0">
         <li class="nav-item">
-          <a class="nav-link {% if request.endpoint == 'index' %}active{% endif %}" href="{{ url_for('index') }}">Início</a>
+          <!-- Corrigido: verificar o endpoint correto do blueprint -->
+          <a class="nav-link {% if request.endpoint == 'produtos_bp.index' %}active{% endif %}" href="{{ url_for('produtos_bp.index') }}">Início</a>
         </li>
         <li class="nav-item">
-          <a class="nav-link {% if request.endpoint == 'produtos' %}active{% endif %}" href="{{ url_for('produtos') }}">Produtos</a>
+          <!-- Corrigido para blueprint 'produtos_bp' -->
+          <a class="nav-link {% if request.endpoint == 'produtos_bp.produtos' %}active{% endif %}" href="{{ url_for('produtos_bp.produtos') }}">Produtos</a>
+        </li>
+        {% if session.get('user_tipo') == 2 %}
+        <li class="nav-item">
+          <!-- Corrigido para blueprint admin_bp -->
+          <a class="nav-link {% if request.endpoint == 'admin_bp.locais' %}active{% endif %}" href="{{ url_for('admin_bp.locais') }}">Locais</a>
         </li>
         <li class="nav-item">
-          <a class="nav-link {% if request.endpoint == 'locais' %}active{% endif %}" href="{{ url_for('locais') }}">Locais</a>
+          <a class="nav-link {% if request.endpoint == 'admin_bp.fornecedores' %}active{% endif %}" href="{{ url_for('admin_bp.fornecedores') }}">Fornecedores</a>
         </li>
         <li class="nav-item">
-          <a class="nav-link {% if request.endpoint == 'fornecedores' %}active{% endif %}" href="{{ url_for('fornecedores') }}">Fornecedores</a>
+          <a class="nav-link {% if request.endpoint == 'admin_bp.categorias' %}active{% endif %}" href="{{ url_for('admin_bp.categorias') }}">Categorias</a>
         </li>
-
-        <li class="nav-item">
-         <a class="nav-link {% if request.endpoint == 'categorias' %}active{% endif %}" href="{{ url_for('categorias') }}">Categorias</a>
-        </li>
-
+        {% endif %}
       </ul>
       {% endif %}
       <div class="d-flex align-items-center gap-2 text-white-50">
         {% if session.get('user_id') %}
           <span class="small">Olá, {{ session.get('user_name') }}</span>
-          <a href="{{ url_for('logout') }}" class="btn btn-sm btn-outline-light">Sair</a>
+          <!-- Corrigido para blueprint 'auth_bp' -->
+          <a href="{{ url_for('auth_bp.logout') }}" class="btn btn-sm btn-outline-light">Sair</a>
         {% else %}
-          <a href="{{ url_for('login') }}" class="btn btn-sm btn-outline-light">Login</a>
-          <a href="{{ url_for('register') }}" class="btn btn-sm btn-warning">Cadastro</a>
+          <a href="{{ url_for('auth_bp.login') }}" class="btn btn-sm btn-outline-light">Login</a>
+          <a href="{{ url_for('auth_bp.register') }}" class="btn btn-sm btn-warning">Cadastro</a>
         {% endif %}
       </div>
     </div>
