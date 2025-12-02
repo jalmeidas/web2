@@ -38,8 +38,9 @@ API completa para gestão de estoque com autenticação JWT.
 ## Como usar:
 1. Faça login no endpoint `/api/login` para obter o token JWT
 2. Use o botão "Authorize" no topo desta página
-3. Cole o token obtido (apenas o token, sem "Bearer")
-4. Teste os endpoints protegidos
+3. Digite: **Bearer** (espaço) e cole seu token
+4. Exemplo: `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...`
+5. Teste os endpoints protegidos
 
 **Desenvolvido para:** Disciplina de Programação Web 2
 
@@ -59,7 +60,7 @@ API completa para gestão de estoque com autenticação JWT.
             "type": "apiKey",
             "name": "Authorization",
             "in": "header",
-            "description": "Token JWT. Use o formato: Bearer SEU_TOKEN_AQUI",
+            "description": 'Digite: Bearer SEU_TOKEN (com "Bearer" e um espaço antes do token)',
         }
     },
     "tags": [
