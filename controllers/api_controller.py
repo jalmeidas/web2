@@ -5,6 +5,7 @@ from flask_jwt_extended import (
     get_jwt_identity,
     get_jwt,
 )
+from flasgger import swag_from
 
 from models import db
 import bcrypt
@@ -19,7 +20,7 @@ def resposta_erro(mensagem, status=400):
 
 
 def require_admin():
-    claims = get_jwt()  # pega os dados extras do token (claims)
+    claims = get_jwt()
     return claims.get("tipo_usuario") == 2
 
 
@@ -27,6 +28,34 @@ def require_admin():
 
 @api_bp.route("/login", methods=["POST"])
 def api_login():
+    """
+    Endpoint de autenticação para obter token JWT
+    ---
+    tags:
+      - Autenticação
+    parameters:
+      - in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/LoginRequest'
+    responses:
+      200:
+        description: Login realizado com sucesso
+        schema:
+          $ref: '#/definitions/LoginResponse'
+        examples:
+          application/json:
+            access_token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+      400:
+        description: Campos obrigatórios ausentes
+        schema:
+          $ref: '#/definitions/Erro'
+      401:
+        description: Usuário não encontrado ou senha inválida
+        schema:
+          $ref: '#/definitions/Erro'
+    """
     dados = request.get_json() or {}
     nome = dados.get("nome_usuario")
     senha = dados.get("senha")
@@ -47,9 +76,7 @@ def api_login():
     if not bcrypt.checkpw(senha.encode("utf-8"), hash_no_banco):
         return resposta_erro("Credenciais inválidas", 401)
 
-    # identity como string (id do usuário)
     identity = str(user["id"])
-    # claims extras com tipo e nome
     additional_claims = {
         "nome_usuario": user["nome_usuario"],
         "tipo_usuario": user["tipo_usuario"],
@@ -59,12 +86,30 @@ def api_login():
     return jsonify({"access_token": token}), 200
 
 
-
 # ---------- PRODUTOS (CRUD + REGRA DE NEGÓCIO) ----------
 
 @api_bp.route("/produtos", methods=["GET"])
 @jwt_required()
 def api_listar_produtos():
+    """
+    Lista todos os produtos cadastrados
+    ---
+    tags:
+      - Produtos
+    security:
+      - Bearer: []
+    responses:
+      200:
+        description: Lista de produtos retornada com sucesso
+        schema:
+          type: array
+          items:
+            $ref: '#/definitions/Produto'
+      401:
+        description: Token JWT ausente ou inválido
+        schema:
+          $ref: '#/definitions/Erro'
+    """
     resp = db.listar_produtos()
     return jsonify(resp.data or []), 200
 
@@ -72,6 +117,34 @@ def api_listar_produtos():
 @api_bp.route("/produtos", methods=["POST"])
 @jwt_required()
 def api_criar_produto():
+    """
+    Cria um novo produto
+    ---
+    tags:
+      - Produtos
+    security:
+      - Bearer: []
+    parameters:
+      - in: body
+        name: body
+        required: true
+        description: Dados do produto a ser criado
+        schema:
+          $ref: '#/definitions/ProdutoInput'
+    responses:
+      201:
+        description: Produto criado com sucesso
+        schema:
+          $ref: '#/definitions/Produto'
+      400:
+        description: Campos obrigatórios faltando
+        schema:
+          $ref: '#/definitions/Erro'
+      401:
+        description: Token JWT ausente ou inválido
+        schema:
+          $ref: '#/definitions/Erro'
+    """
     dados = request.get_json() or {}
     campos_obrig = [
         "nome_produto",
@@ -103,6 +176,34 @@ def api_criar_produto():
 @api_bp.route("/produtos/<int:id_produto>", methods=["GET"])
 @jwt_required()
 def api_obter_produto(id_produto):
+    """
+    Obtém um produto específico por ID
+    ---
+    tags:
+      - Produtos
+    security:
+      - Bearer: []
+    parameters:
+      - in: path
+        name: id_produto
+        type: integer
+        required: true
+        description: ID do produto
+        example: 1
+    responses:
+      200:
+        description: Produto encontrado
+        schema:
+          $ref: '#/definitions/Produto'
+      401:
+        description: Token JWT ausente ou inválido
+        schema:
+          $ref: '#/definitions/Erro'
+      404:
+        description: Produto não encontrado
+        schema:
+          $ref: '#/definitions/Erro'
+    """
     resp = db.listar_produtos()
     itens = resp.data or []
     produto = next((p for p in itens if p["id"] == id_produto), None)
@@ -114,8 +215,72 @@ def api_obter_produto(id_produto):
 @api_bp.route("/produtos/<int:id_produto>", methods=["PUT"])
 @jwt_required()
 def api_atualizar_produto(id_produto):
+    """
+    Atualiza os dados de um produto existente
+    ---
+    tags:
+      - Produtos
+    security:
+      - Bearer: []
+    parameters:
+      - in: path
+        name: id_produto
+        type: integer
+        required: true
+        description: ID do produto a ser atualizado
+        example: 1
+      - in: body
+        name: body
+        required: true
+        description: Campos a serem atualizados (todos opcionais)
+        schema:
+          type: object
+          properties:
+            nome_produto:
+              type: string
+              example: "Caixa Isopor Grande"
+            custo_produto_Unit:
+              type: number
+              format: float
+              example: 6.0
+            valor_venda_Unit:
+              type: number
+              format: float
+              example: 12.0
+            id_local:
+              type: integer
+              example: 1
+            id_categoria:
+              type: integer
+              example: 1
+            id_fornecedor:
+              type: integer
+              example: 1
+            quantidade:
+              type: integer
+              example: 50
+            estoque_minimo:
+              type: integer
+              example: 5
+    responses:
+      200:
+        description: Produto atualizado com sucesso
+        schema:
+          $ref: '#/definitions/Produto'
+      400:
+        description: Nada para atualizar
+        schema:
+          $ref: '#/definitions/Erro'
+      401:
+        description: Token JWT ausente ou inválido
+        schema:
+          $ref: '#/definitions/Erro'
+      404:
+        description: Produto não encontrado
+        schema:
+          $ref: '#/definitions/Erro'
+    """
     dados = request.get_json() or {}
-    # aqui pode usar supabase diretamente ou criar função update no db.py
     update = {}
     for campo in [
         "nome_produto",
@@ -147,6 +312,36 @@ def api_atualizar_produto(id_produto):
 @api_bp.route("/produtos/<int:id_produto>", methods=["DELETE"])
 @jwt_required()
 def api_deletar_produto(id_produto):
+    """
+    Deleta um produto
+    ---
+    tags:
+      - Produtos
+    security:
+      - Bearer: []
+    parameters:
+      - in: path
+        name: id_produto
+        type: integer
+        required: true
+        description: ID do produto a ser deletado
+        example: 1
+    responses:
+      204:
+        description: Produto deletado com sucesso
+      400:
+        description: Erro ao deletar produto
+        schema:
+          $ref: '#/definitions/Erro'
+      401:
+        description: Token JWT ausente ou inválido
+        schema:
+          $ref: '#/definitions/Erro'
+      404:
+        description: Produto não encontrado
+        schema:
+          $ref: '#/definitions/Erro'
+    """
     try:
         resp = db.deletar_produto(id_produto)
     except Exception as e:
@@ -161,6 +356,43 @@ def api_deletar_produto(id_produto):
 @api_bp.route("/produtos/<int:id_produto>/entrada", methods=["POST"])
 @jwt_required()
 def api_entrada_estoque(id_produto):
+    """
+    Registra entrada de estoque (aumenta quantidade)
+    ---
+    tags:
+      - Estoque
+    security:
+      - Bearer: []
+    parameters:
+      - in: path
+        name: id_produto
+        type: integer
+        required: true
+        description: ID do produto
+        example: 1
+      - in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/MovimentacaoEstoque'
+    responses:
+      200:
+        description: Entrada registrada com sucesso
+        schema:
+          $ref: '#/definitions/MovimentacaoResponse'
+        examples:
+          application/json:
+            mensagem: "Entrada registrada"
+            quantidade: 10
+      400:
+        description: Quantidade inválida ou produto não encontrado
+        schema:
+          $ref: '#/definitions/Erro'
+      401:
+        description: Token JWT ausente ou inválido
+        schema:
+          $ref: '#/definitions/Erro'
+    """
     dados = request.get_json() or {}
     qtd = int(dados.get("quantidade", 0))
     if qtd <= 0:
@@ -176,6 +408,47 @@ def api_entrada_estoque(id_produto):
 @api_bp.route("/produtos/<int:id_produto>/saida", methods=["POST"])
 @jwt_required()
 def api_saida_estoque(id_produto):
+    """
+    Registra saída de estoque (reduz quantidade)
+    Valida estoque disponível e alerta se ficar abaixo do mínimo
+    ---
+    tags:
+      - Estoque
+    security:
+      - Bearer: []
+    parameters:
+      - in: path
+        name: id_produto
+        type: integer
+        required: true
+        description: ID do produto
+        example: 1
+      - in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/MovimentacaoEstoque'
+    responses:
+      200:
+        description: Saída registrada com sucesso
+        schema:
+          $ref: '#/definitions/MovimentacaoResponse'
+        examples:
+          application/json:
+            mensagem: "Saída registrada"
+            quantidade: 5
+      400:
+        description: Estoque insuficiente, quantidade inválida ou produto não encontrado
+        schema:
+          $ref: '#/definitions/Erro'
+        examples:
+          application/json:
+            erro: "Estoque insuficiente"
+      401:
+        description: Token JWT ausente ou inválido
+        schema:
+          $ref: '#/definitions/Erro'
+    """
     dados = request.get_json() or {}
     qtd = int(dados.get("quantidade", 0))
     if qtd <= 0:
@@ -188,11 +461,30 @@ def api_saida_estoque(id_produto):
     return jsonify({"mensagem": "Saída registrada", "quantidade": qtd}), 200
 
 
-# ---------- CATEGORIAS / LOCAIS / FORNECEDORES (ADMIN) ----------
+# ---------- CATEGORIAS ----------
 
 @api_bp.route("/categorias", methods=["GET"])
 @jwt_required()
 def api_listar_categorias():
+    """
+    Lista todas as categorias
+    ---
+    tags:
+      - Categorias
+    security:
+      - Bearer: []
+    responses:
+      200:
+        description: Lista de categorias retornada com sucesso
+        schema:
+          type: array
+          items:
+            $ref: '#/definitions/Categoria'
+      401:
+        description: Token JWT ausente ou inválido
+        schema:
+          $ref: '#/definitions/Erro'
+    """
     resp = db.listar_categorias()
     return jsonify(resp.data or []), 200
 
@@ -200,6 +492,43 @@ def api_listar_categorias():
 @api_bp.route("/categorias", methods=["POST"])
 @jwt_required()
 def api_criar_categoria():
+    """
+    Cria uma nova categoria (apenas administradores)
+    ---
+    tags:
+      - Categorias
+    security:
+      - Bearer: []
+    parameters:
+      - in: body
+        name: body
+        required: true
+        schema:
+          type: object
+          required:
+            - nome_categoria
+          properties:
+            nome_categoria:
+              type: string
+              example: "Alimentos"
+    responses:
+      201:
+        description: Categoria criada com sucesso
+        schema:
+          $ref: '#/definitions/Categoria'
+      400:
+        description: nome_categoria é obrigatório
+        schema:
+          $ref: '#/definitions/Erro'
+      401:
+        description: Token JWT ausente ou inválido
+        schema:
+          $ref: '#/definitions/Erro'
+      403:
+        description: Acesso restrito a administradores
+        schema:
+          $ref: '#/definitions/Erro'
+    """
     if not require_admin():
         return resposta_erro("Acesso restrito a administradores", 403)
 
@@ -215,6 +544,41 @@ def api_criar_categoria():
 @api_bp.route("/categorias/<int:id_categoria>", methods=["DELETE"])
 @jwt_required()
 def api_deletar_categoria(id_categoria):
+    """
+    Deleta uma categoria (apenas administradores)
+    Não permite deletar se houver produtos usando a categoria
+    ---
+    tags:
+      - Categorias
+    security:
+      - Bearer: []
+    parameters:
+      - in: path
+        name: id_categoria
+        type: integer
+        required: true
+        description: ID da categoria a ser deletada
+        example: 1
+    responses:
+      204:
+        description: Categoria deletada com sucesso
+      400:
+        description: Existem produtos usando esta categoria
+        schema:
+          $ref: '#/definitions/Erro'
+      401:
+        description: Token JWT ausente ou inválido
+        schema:
+          $ref: '#/definitions/Erro'
+      403:
+        description: Acesso restrito a administradores
+        schema:
+          $ref: '#/definitions/Erro'
+      404:
+        description: Categoria não encontrada
+        schema:
+          $ref: '#/definitions/Erro'
+    """
     if not require_admin():
         return resposta_erro("Acesso restrito a administradores", 403)
 
@@ -227,11 +591,30 @@ def api_deletar_categoria(id_categoria):
     return "", 204
 
 
-# Locais e Fornecedores: padrão idêntico, usando funções já existentes do db
+# ---------- LOCAIS DE ESTOQUE ----------
 
 @api_bp.route("/locais", methods=["GET"])
 @jwt_required()
 def api_listar_locais():
+    """
+    Lista todos os locais de estoque
+    ---
+    tags:
+      - Locais
+    security:
+      - Bearer: []
+    responses:
+      200:
+        description: Lista de locais retornada com sucesso
+        schema:
+          type: array
+          items:
+            $ref: '#/definitions/LocalEstoque'
+      401:
+        description: Token JWT ausente ou inválido
+        schema:
+          $ref: '#/definitions/Erro'
+    """
     resp = db.listar_locais_estoque()
     return jsonify(resp.data or []), 200
 
@@ -239,6 +622,43 @@ def api_listar_locais():
 @api_bp.route("/locais", methods=["POST"])
 @jwt_required()
 def api_criar_local():
+    """
+    Cria um novo local de estoque (apenas administradores)
+    ---
+    tags:
+      - Locais
+    security:
+      - Bearer: []
+    parameters:
+      - in: body
+        name: body
+        required: true
+        schema:
+          type: object
+          required:
+            - nome_local
+          properties:
+            nome_local:
+              type: string
+              example: "Matriz"
+    responses:
+      201:
+        description: Local criado com sucesso
+        schema:
+          $ref: '#/definitions/LocalEstoque'
+      400:
+        description: nome_local é obrigatório
+        schema:
+          $ref: '#/definitions/Erro'
+      401:
+        description: Token JWT ausente ou inválido
+        schema:
+          $ref: '#/definitions/Erro'
+      403:
+        description: Acesso restrito a administradores
+        schema:
+          $ref: '#/definitions/Erro'
+    """
     if not require_admin():
         return resposta_erro("Acesso restrito a administradores", 403)
 
@@ -254,6 +674,41 @@ def api_criar_local():
 @api_bp.route("/locais/<int:id_local>", methods=["DELETE"])
 @jwt_required()
 def api_deletar_local(id_local):
+    """
+    Deleta um local de estoque (apenas administradores)
+    Não permite deletar se houver produtos neste local
+    ---
+    tags:
+      - Locais
+    security:
+      - Bearer: []
+    parameters:
+      - in: path
+        name: id_local
+        type: integer
+        required: true
+        description: ID do local a ser deletado
+        example: 1
+    responses:
+      204:
+        description: Local deletado com sucesso
+      400:
+        description: Existem produtos cadastrados neste local
+        schema:
+          $ref: '#/definitions/Erro'
+      401:
+        description: Token JWT ausente ou inválido
+        schema:
+          $ref: '#/definitions/Erro'
+      403:
+        description: Acesso restrito a administradores
+        schema:
+          $ref: '#/definitions/Erro'
+      404:
+        description: Local não encontrado
+        schema:
+          $ref: '#/definitions/Erro'
+    """
     if not require_admin():
         return resposta_erro("Acesso restrito a administradores", 403)
 
@@ -266,9 +721,30 @@ def api_deletar_local(id_local):
     return "", 204
 
 
+# ---------- FORNECEDORES ----------
+
 @api_bp.route("/fornecedores", methods=["GET"])
 @jwt_required()
 def api_listar_fornecedores():
+    """
+    Lista todos os fornecedores
+    ---
+    tags:
+      - Fornecedores
+    security:
+      - Bearer: []
+    responses:
+      200:
+        description: Lista de fornecedores retornada com sucesso
+        schema:
+          type: array
+          items:
+            $ref: '#/definitions/Fornecedor'
+      401:
+        description: Token JWT ausente ou inválido
+        schema:
+          $ref: '#/definitions/Erro'
+    """
     resp = db.listar_fornecedores()
     return jsonify(resp.data or []), 200
 
@@ -276,6 +752,43 @@ def api_listar_fornecedores():
 @api_bp.route("/fornecedores", methods=["POST"])
 @jwt_required()
 def api_criar_fornecedor():
+    """
+    Cria um novo fornecedor (apenas administradores)
+    ---
+    tags:
+      - Fornecedores
+    security:
+      - Bearer: []
+    parameters:
+      - in: body
+        name: body
+        required: true
+        schema:
+          type: object
+          required:
+            - nome_fornecedor
+          properties:
+            nome_fornecedor:
+              type: string
+              example: "Fornecedor X"
+    responses:
+      201:
+        description: Fornecedor criado com sucesso
+        schema:
+          $ref: '#/definitions/Fornecedor'
+      400:
+        description: nome_fornecedor é obrigatório
+        schema:
+          $ref: '#/definitions/Erro'
+      401:
+        description: Token JWT ausente ou inválido
+        schema:
+          $ref: '#/definitions/Erro'
+      403:
+        description: Acesso restrito a administradores
+        schema:
+          $ref: '#/definitions/Erro'
+    """
     if not require_admin():
         return resposta_erro("Acesso restrito a administradores", 403)
 
@@ -291,6 +804,41 @@ def api_criar_fornecedor():
 @api_bp.route("/fornecedores/<int:id_fornecedor>", methods=["DELETE"])
 @jwt_required()
 def api_deletar_fornecedor(id_fornecedor):
+    """
+    Deleta um fornecedor (apenas administradores)
+    Não permite deletar se houver produtos vinculados ao fornecedor
+    ---
+    tags:
+      - Fornecedores
+    security:
+      - Bearer: []
+    parameters:
+      - in: path
+        name: id_fornecedor
+        type: integer
+        required: true
+        description: ID do fornecedor a ser deletado
+        example: 1
+    responses:
+      204:
+        description: Fornecedor deletado com sucesso
+      400:
+        description: Existem produtos vinculados a este fornecedor
+        schema:
+          $ref: '#/definitions/Erro'
+      401:
+        description: Token JWT ausente ou inválido
+        schema:
+          $ref: '#/definitions/Erro'
+      403:
+        description: Acesso restrito a administradores
+        schema:
+          $ref: '#/definitions/Erro'
+      404:
+        description: Fornecedor não encontrado
+        schema:
+          $ref: '#/definitions/Erro'
+    """
     if not require_admin():
         return resposta_erro("Acesso restrito a administradores", 403)
 
