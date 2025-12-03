@@ -112,8 +112,9 @@ API completa para gestão de estoque com autenticação JWT.
                 "id_local": {"type": "integer", "example": 1},
                 "id_categoria": {"type": "integer", "example": 1},
                 "id_fornecedor": {"type": "integer", "example": 1},
-                "quantidade": {"type": "integer", "example": 100},
-                "estoque_minimo": {"type": "integer", "example": 10},
+                "quantidade": {"type": "integer", "example": 100, "description": "Quantidade atual em estoque"},
+                "estoque_minimo": {"type": "integer", "example": 10, "description": "Quantidade mínima permitida (não pode ficar abaixo)"},
+                "estoque_maximo": {"type": "integer", "example": 500, "description": "Quantidade máxima permitida (não pode ultrapassar)"},
             },
         },
         "ProdutoInput": {
@@ -133,8 +134,9 @@ API completa para gestão de estoque com autenticação JWT.
                 "id_local": {"type": "integer", "example": 1},
                 "id_categoria": {"type": "integer", "example": 1},
                 "id_fornecedor": {"type": "integer", "example": 1},
-                "quantidade": {"type": "integer", "example": 0, "default": 0},
-                "estoque_minimo": {"type": "integer", "example": 0, "default": 0},
+                "quantidade": {"type": "integer", "example": 0, "default": 0, "description": "Quantidade inicial em estoque"},
+                "estoque_minimo": {"type": "integer", "example": 0, "default": 0, "description": "Quantidade mínima permitida"},
+                "estoque_maximo": {"type": "integer", "example": 999999, "default": 999999, "description": "Quantidade máxima permitida"},
             },
         },
         "Categoria": {

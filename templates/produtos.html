@@ -6,55 +6,80 @@
   <div class="col-md-3 mb-3">
     <div class="card shadow-sm h-100">
       <div class="card-header bg-primary text-white">
-        <h6 class="mb-0">➕ Novo produto</h6>
+        <h6 class="mb-0">Novo produto</h6>
       </div>
       <div class="card-body p-2">
         <form method="post">
           <div class="mb-1">
-            <input name="nome_produto" class="form-control form-control-sm" placeholder="Nome" required>
+            <input name="nome_produto" class="form-control form-control-sm" placeholder="Nome do produto" required>
           </div>
           
           <div class="row g-1 mb-2">
             <div class="col-6">
-              <input name="custo" type="number" step="0.01" class="form-control form-control-sm" placeholder="Custo">
+              <input name="custo" type="number" step="0.01" class="form-control form-control-sm" placeholder="R$ Custo" required>
             </div>
             <div class="col-6">
-              <input name="venda" type="number" step="0.01" class="form-control form-control-sm" placeholder="Venda">
+              <input name="venda" type="number" step="0.01" class="form-control form-control-sm" placeholder="R$ Venda" required>
             </div>
           </div>
 
-          <div class="row g-1 mb-2">
-            <div class="col-6">
-              <input name="quantidade" type="number" class="form-control form-control-sm" placeholder="Qtd" value="0">
+          <!-- NOVO: Linha com 3 campos de estoque -->
+          <div class="mb-2">
+            <label class="form-label small mb-1 text-muted">Controle de Estoque:</label>
+            <div class="row g-1">
+              <div class="col-4">
+                <input name="quantidade" type="number" class="form-control form-control-sm" 
+                       placeholder="Atual" value="0" min="0" required
+                       title="Quantidade inicial em estoque">
+              </div>
+              <div class="col-4">
+                <input name="estoque_minimo" type="number" class="form-control form-control-sm" 
+                       placeholder="Mín" value="0" min="0" required
+                       title="Estoque mínimo permitido">
+              </div>
+              <div class="col-4">
+                <input name="estoque_maximo" type="number" class="form-control form-control-sm" 
+                       placeholder="Máx" value="999999" min="1" required
+                       title="Estoque máximo permitido">
+              </div>
             </div>
-            <div class="col-6">
-              <input name="estoque_minimo" type="number" class="form-control form-control-sm" placeholder="Mín" value="0">
-            </div>
+            <small class="text-muted d-block mt-1" style="font-size: 0.7rem;">
+              Atual | Mínimo | Máximo
+            </small>
           </div>
 
           <select name="id_local" class="form-select form-select-sm mb-1" required>
-            <option value="">Local</option>
+            <option value="">Selecione o Local</option>
             {% for local in locais %}
             <option value="{{ local.id }}">{{ local.nome_local }}</option>
             {% endfor %}
           </select>
 
           <select name="id_fornecedor" class="form-select form-select-sm mb-1" required>
-            <option value="">Fornecedor</option>
+            <option value="">Selecione o Fornecedor</option>
             {% for fornecedor in fornecedores %}
             <option value="{{ fornecedor.id }}">{{ fornecedor.nome_fornecedor }}</option>
             {% endfor %}
           </select>
 
           <select name="id_categoria" class="form-select form-select-sm mb-2" required>
-            <option value="">Categoria</option>
+            <option value="">Selecione a Categoria</option>
             {% for categoria in categorias %}
             <option value="{{ categoria.id }}">{{ categoria.nome_categoria }}</option>
             {% endfor %}
           </select>
 
-          <button class="btn btn-primary w-100 btn-sm">Salvar</button>
+          <button class="btn btn-primary w-100 btn-sm">Salvar Produto</button>
         </form>
+        
+        <!-- Dica de validação -->
+        <div class="alert alert-info mt-2 p-2 small mb-0">
+          <strong>Validação:</strong>
+          <ul class="mb-0 ps-3" style="font-size: 0.75rem;">
+            <li>Mín ≤ Atual ≤ Máx</li>
+            <li>Mínimo &lt; Máximo</li>
+          </ul>
+        </div>
       </div>
     </div>
   </div>
@@ -63,54 +88,111 @@
   <div class="col-md-9">
     <div class="card shadow-sm">
       <div class="card-body">
-        <h5 class="card-title mb-3">Produtos ({{ produtos|length }})</h5>
+        <h5 class="card-title mb-3">Produtos Cadastrados ({{ produtos|length }})</h5>
         {% if produtos %}
-        <div class="table-responsive" style="font-size: 0.85rem;">
-          <table class="table table-sm table-hover">
+        <div class="table-responsive" style="font-size: 0.8rem;">
+          <table class="table table-sm table-hover align-middle">
             <thead class="table-dark">
               <tr>
-                <th style="width: 50px;">ID</th>
-                <th style="width: 150px;">Produto</th>
-                <th style="width: 70px;">Custo</th>
-                <th style="width: 70px;">Venda</th>
-                <th style="width: 80px;">Estoque</th>
-                <th style="width: 70px;">Mínimo</th>
-                <th style="width: 120px;">Local</th>
-                <th style="width: 130px;">Fornecedor</th>
-                <th style="width: 120px;">Categoria</th>
-                <th style="width: 180px;">Ações</th>
+                <th style="width: 40px;">ID</th>
+                <th style="width: 140px;">Produto</th>
+                <th style="width: 60px;">Custo</th>
+                <th style="width: 60px;">Venda</th>
+                <th style="width: 150px;">Estoque</th>
+                <th style="width: 100px;">Local</th>
+                <th style="width: 110px;">Fornecedor</th>
+                <th style="width: 100px;">Categoria</th>
+                <th style="width: 200px;">Ações</th>
               </tr>
             </thead>
             <tbody>
               {% for p in produtos %}
+              {% set estoque_atual = p.quantidade %}
+              {% set estoque_min = p.estoque_minimo %}
+              {% set estoque_max = p.get('estoque_maximo', 999999) %}
+              {% set percentual = ((estoque_atual - estoque_min) / (estoque_max - estoque_min) * 100) if (estoque_max - estoque_min) > 0 else 50 %}
+              
               <tr>
                 <td><strong>{{ p.id }}</strong></td>
-                <td>{{ p.nome_produto }}</td>
-                <td>R$ {{ "%.2f"|format(p.custo_produto_Unit) }}</td>
-                <td>R$ {{ "%.2f"|format(p.valor_venda_Unit) }}</td>
                 <td>
-                  <span class="badge bg-{{ 'success' if p.quantidade >= p.estoque_minimo else 'danger' }} fs-6">
-                    {{ p.quantidade }}
-                  </span>
+                  <strong>{{ p.nome_produto }}</strong>
                 </td>
-                <td>{{ p.estoque_minimo }}</td>
-                <td>{{ p.local_nome }}</td>
-                <td>{{ p.fornecedor_nome }}</td>
-                <td>{{ p.categoria_nome }}</td>
+                <td class="text-muted small">R$ {{ "%.2f"|format(p.custo_produto_Unit) }}</td>
+                <td class="text-success small">R$ {{ "%.2f"|format(p.valor_venda_Unit) }}</td>
                 <td>
-                  <!-- BOTÕES COMPACTOS NA MESMA LINHA -->
-                  <div class="input-group input-group-sm" style="width: 140px;">
-                    <input type="number" name="quantidade_entrada" class="form-control form-control-sm text-center" 
-                           style="width: 45px; height: 32px;" min="1" placeholder="+" required form="form-entrada-{{ p.id }}">
-                    <button type="submit" form="form-entrada-{{ p.id }}" class="btn btn-success" style="width: 35px; height: 32px;">
-                      ➕
-                    </button>
-                    <input type="number" name="quantidade_saida" class="form-control form-control-sm text-center" 
-                           style="width: 45px; height: 32px;" min="1" max="{{ p.quantidade }}" placeholder="-" required form="form-saida-{{ p.id }}">
-                    <button type="submit" form="form-saida-{{ p.id }}" class="btn btn-danger" style="width: 35px; height: 32px;">
-                      ➖
-                    </button>
+                  <!-- Barra de progresso do estoque -->
+                  <div class="d-flex align-items-center gap-1">
+                    <span class="badge bg-{{ 'danger' if estoque_atual < estoque_min else ('warning' if estoque_atual > estoque_max else 'success') }}" 
+                          style="width: 50px; font-size: 0.75rem;">
+                      {{ estoque_atual }}
+                    </span>
+                    <div class="progress flex-grow-1" style="height: 8px; width: 60px;" 
+                         title="Mín: {{ estoque_min }} | Máx: {{ estoque_max }}">
+                      <div class="progress-bar bg-{{ 'danger' if percentual < 20 else ('warning' if percentual < 50 else 'success') }}" 
+                           style="width: {{ [percentual, 100]|min }}%">
+                      </div>
+                    </div>
                   </div>
+                  <small class="text-muted" style="font-size: 0.65rem; line-height: 1;">
+                    <span title="Mínimo">📉{{ estoque_min }}</span> | 
+                    <span title="Máximo">📈{{ estoque_max }}</span>
+                  </small>
+                </td>
+                <td class="small">{{ p.local_nome }}</td>
+                <td class="small">{{ p.fornecedor_nome }}</td>
+                <td class="small">{{ p.categoria_nome }}</td>
+                <td>
+                  <!-- BOTÕES DE ENTRADA/SAÍDA -->
+                  <div class="d-flex gap-1 align-items-center mb-1">
+                    <!-- Entrada -->
+                    <div class="input-group input-group-sm" style="width: 90px;">
+                      <input type="number" name="quantidade_entrada" 
+                             class="form-control form-control-sm text-center px-1" 
+                             style="width: 50px; font-size: 0.75rem;" 
+                             min="1" 
+                             max="{{ estoque_max - estoque_atual }}"
+                             placeholder="+" 
+                             required 
+                             form="form-entrada-{{ p.id }}"
+                             title="Máximo: {{ estoque_max - estoque_atual }} (não pode ultrapassar {{ estoque_max }})">
+                      <button type="submit" form="form-entrada-{{ p.id }}" 
+                              class="btn btn-success btn-sm px-2" 
+                              style="font-size: 0.7rem;"
+                              title="Adicionar ao estoque">
+                        +
+                      </button>
+                    </div>
+                    
+                    <!-- Saída -->
+                    <div class="input-group input-group-sm" style="width: 90px;">
+                      <input type="number" name="quantidade_saida" 
+                             class="form-control form-control-sm text-center px-1" 
+                             style="width: 50px; font-size: 0.75rem;" 
+                             min="1" 
+                             max="{{ estoque_atual - estoque_min }}"
+                             placeholder="-" 
+                             required 
+                             form="form-saida-{{ p.id }}"
+                             title="Máximo: {{ estoque_atual - estoque_min }} (não pode ficar abaixo de {{ estoque_min }})">
+                      <button type="submit" form="form-saida-{{ p.id }}" 
+                              class="btn btn-danger btn-sm px-2" 
+                              style="font-size: 0.7rem;"
+                              title="Remover do estoque">
+                        -
+                      </button>
+                    </div>
+                  </div>
+                  
+                  <!-- Alertas visuais -->
+                  {% if estoque_atual <= estoque_min %}
+                  <div class="alert alert-danger py-1 px-2 mb-1 small" style="font-size: 0.65rem;">
+                    Estoque no mínimo!
+                  </div>
+                  {% elif estoque_atual >= estoque_max * 0.9 %}
+                  <div class="alert alert-warning py-1 px-2 mb-1 small" style="font-size: 0.65rem;">
+                    Perto do máximo!
+                  </div>
+                  {% endif %}
                   
                   <!-- Forms hidden -->
                   <form id="form-entrada-{{ p.id }}" method="post" action="{{ url_for('produtos_bp.produtos') }}" style="display: none;">
@@ -123,26 +205,150 @@
                   </form>
                   
                   <!-- Deletar -->
-                  <div class="mt-1">
-                    <form method="post" action="{{ url_for('produtos_bp.deletar_produto', id_produto=p.id) }}" class="d-inline">
-                      <button class="btn btn-outline-danger btn-sm px-1" onclick="return confirm('Excluir?')" style="width: 35px; height: 32px;">
-                        🗑️
-                      </button>
-                    </form>
-                  </div>
+                  <form method="post" action="{{ url_for('produtos_bp.deletar_produto', id_produto=p.id) }}" 
+                        class="d-inline" 
+                        onsubmit="return confirm('Tem certeza que deseja excluir o produto \'{{ p.nome_produto }}\'?')">
+                    <button class="btn btn-outline-danger btn-sm px-2" 
+                            style="font-size: 0.7rem; width: 100%;">
+                      Excluir
+                    </button>
+                  </form>
                 </td>
               </tr>
               {% endfor %}
             </tbody>
           </table>
         </div>
+        
+        <!-- Legenda -->
+        <div class="mt-3 p-2 bg-light rounded">
+          <strong class="small">Legenda de Estoque:</strong>
+          <div class="d-flex gap-3 mt-1 flex-wrap" style="font-size: 0.75rem;">
+            <span><span class="badge bg-danger">●</span> Abaixo do mínimo ou acima do máximo</span>
+            <span><span class="badge bg-warning">●</span> Entre 20-50% da capacidade</span>
+            <span><span class="badge bg-success">●</span> Normal (ideal)</span>
+          </div>
+        </div>
+        
         {% else %}
-        <div class="text-center py-4 text-muted">
-          Nenhum produto cadastrado
+        <div class="text-center py-5 text-muted">
+          <h5 class="mt-3">Nenhum produto cadastrado</h5>
+          <p class="small">Cadastre o primeiro produto usando o formulário ao lado</p>
         </div>
         {% endif %}
       </div>
     </div>
   </div>
 </div>
+
+<style>
+/* Melhorias visuais */
+.progress {
+  border: 1px solid #dee2e6;
+}
+
+.table td {
+  vertical-align: middle;
+}
+
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+  opacity: 1;
+}
+
+/* Animação nos alertas */
+.alert {
+  animation: fadeIn 0.3s ease-in;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-5px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Responsividade */
+@media (max-width: 768px) {
+  .table {
+    font-size: 0.7rem !important;
+  }
+  
+  .input-group {
+    width: 80px !important;
+  }
+}
+</style>
+
+<script>
+// Validação em tempo real do formulário de cadastro
+document.addEventListener('DOMContentLoaded', function() {
+  const form = document.querySelector('form[method="post"]');
+  if (!form) return;
+  
+  const qtdInput = form.querySelector('input[name="quantidade"]');
+  const minInput = form.querySelector('input[name="estoque_minimo"]');
+  const maxInput = form.querySelector('input[name="estoque_maximo"]');
+  
+  function validarEstoque() {
+    const qtd = parseInt(qtdInput.value) || 0;
+    const min = parseInt(minInput.value) || 0;
+    const max = parseInt(maxInput.value) || 999999;
+    
+    // Validar mínimo < máximo
+    if (min >= max) {
+      maxInput.setCustomValidity('O estoque máximo deve ser maior que o mínimo!');
+      return false;
+    } else {
+      maxInput.setCustomValidity('');
+    }
+    
+    // Validar quantidade entre min e max
+    if (qtd < min) {
+      qtdInput.setCustomValidity('A quantidade não pode ser menor que o estoque mínimo!');
+      return false;
+    } else if (qtd > max) {
+      qtdInput.setCustomValidity('A quantidade não pode ser maior que o estoque máximo!');
+      return false;
+    } else {
+      qtdInput.setCustomValidity('');
+    }
+    
+    return true;
+  }
+  
+  [qtdInput, minInput, maxInput].forEach(input => {
+    if (input) {
+      input.addEventListener('input', validarEstoque);
+      input.addEventListener('blur', validarEstoque);
+    }
+  });
+  
+  form.addEventListener('submit', function(e) {
+    if (!validarEstoque()) {
+      e.preventDefault();
+      alert('Verifique os valores de estoque:\n\n' +
+            '• Mínimo deve ser menor que Máximo\n' +
+            '• Quantidade deve estar entre Mínimo e Máximo');
+    }
+  });
+});
+
+// Validação dos inputs de entrada/saída
+document.querySelectorAll('input[name="quantidade_entrada"], input[name="quantidade_saida"]').forEach(input => {
+  input.addEventListener('input', function() {
+    const max = parseInt(this.max);
+    const val = parseInt(this.value);
+    
+    if (val > max) {
+      this.value = max;
+      
+      const tipo = this.name === 'quantidade_entrada' ? 'Entrada' : 'Saída';
+      const motivo = this.name === 'quantidade_entrada' ? 
+        'ultrapassaria o estoque máximo' : 
+        'deixaria abaixo do estoque mínimo';
+      
+      alert(`${tipo} limitada a ${max} unidades\n\nMotivo: ${motivo}`);
+    }
+  });
+});
+</script>
 {% endblock %}

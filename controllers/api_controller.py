@@ -118,7 +118,7 @@ def api_listar_produtos():
 @jwt_required()
 def api_criar_produto():
     """
-    Cria um novo produto
+    Cria um novo produto com validações de estoque
     ---
     tags:
       - Produtos
@@ -137,9 +137,12 @@ def api_criar_produto():
         schema:
           $ref: '#/definitions/Produto'
       400:
-        description: Campos obrigatórios faltando
+        description: Campos obrigatórios faltando ou validação de estoque
         schema:
           $ref: '#/definitions/Erro'
+        examples:
+          application/json:
+            erro: "Quantidade inicial (5) não pode ser menor que o estoque mínimo (10)"
       401:
         description: Token JWT ausente ou inválido
         schema:
@@ -159,18 +162,25 @@ def api_criar_produto():
 
     quantidade = int(dados.get("quantidade", 0))
     estoque_minimo = int(dados.get("estoque_minimo", 0))
+    estoque_maximo = int(dados.get("estoque_maximo", 999999))  # NOVO CAMPO
+    id_usuario = int(get_jwt_identity())  # Pega ID do usuário do token JWT
 
-    resp = db.inserir_produto(
-        dados["nome_produto"],
-        float(dados["custo_produto_Unit"]),
-        float(dados["valor_venda_Unit"]),
-        int(dados["id_local"]),
-        int(dados["id_categoria"]),
-        int(dados["id_fornecedor"]),
-        quantidade=quantidade,
-        estoque_minimo=estoque_minimo,
-    )
-    return jsonify(resp.data or {}), 201
+    try:
+        resp = db.inserir_produto(
+            dados["nome_produto"],
+            float(dados["custo_produto_Unit"]),
+            float(dados["valor_venda_Unit"]),
+            int(dados["id_local"]),
+            int(dados["id_categoria"]),
+            int(dados["id_fornecedor"]),
+            quantidade=quantidade,
+            estoque_minimo=estoque_minimo,
+            estoque_maximo=estoque_maximo,  # NOVO CAMPO
+            id_usuario=id_usuario,  # NOVO CAMPO
+        )
+        return jsonify(resp.data or {}), 201
+    except ValueError as e:
+        return resposta_erro(str(e), 400)
 
 
 @api_bp.route("/produtos/<int:id_produto>", methods=["GET"])
@@ -262,6 +272,9 @@ def api_atualizar_produto(id_produto):
             estoque_minimo:
               type: integer
               example: 5
+            estoque_maximo:
+              type: integer
+              example: 500
     responses:
       200:
         description: Produto atualizado com sucesso
@@ -291,6 +304,7 @@ def api_atualizar_produto(id_produto):
         "id_fornecedor",
         "quantidade",
         "estoque_minimo",
+        "estoque_maximo",  # NOVO CAMPO
     ]:
         if campo in dados:
             update[campo] = dados[campo]
@@ -358,6 +372,7 @@ def api_deletar_produto(id_produto):
 def api_entrada_estoque(id_produto):
     """
     Registra entrada de estoque (aumenta quantidade)
+    Valida estoque máximo - não permite ultrapassar
     ---
     tags:
       - Estoque
@@ -385,9 +400,12 @@ def api_entrada_estoque(id_produto):
             mensagem: "Entrada registrada"
             quantidade: 10
       400:
-        description: Quantidade inválida ou produto não encontrado
+        description: Quantidade inválida, produto não encontrado ou estoque máximo excedido
         schema:
           $ref: '#/definitions/Erro'
+        examples:
+          application/json:
+            erro: "Entrada negada! Estoque máximo do produto 'Caixa Isopor' é 500. Estoque atual: 480. Tentativa de entrada: 30. Estoque resultante seria: 510."
       401:
         description: Token JWT ausente ou inválido
         schema:
@@ -398,8 +416,10 @@ def api_entrada_estoque(id_produto):
     if qtd <= 0:
         return resposta_erro("Quantidade deve ser > 0", 400)
 
+    id_usuario = int(get_jwt_identity())  # Pega ID do usuário do token JWT
+
     try:
-        db.entrada_estoque(id_produto, qtd)
+        db.entrada_estoque(id_produto, qtd, id_usuario)
     except ValueError as e:
         return resposta_erro(str(e), 400)
     return jsonify({"mensagem": "Entrada registrada", "quantidade": qtd}), 200
@@ -410,7 +430,7 @@ def api_entrada_estoque(id_produto):
 def api_saida_estoque(id_produto):
     """
     Registra saída de estoque (reduz quantidade)
-    Valida estoque disponível e alerta se ficar abaixo do mínimo
+    Valida estoque mínimo - não permite ficar abaixo do mínimo estabelecido
     ---
     tags:
       - Estoque
@@ -438,12 +458,12 @@ def api_saida_estoque(id_produto):
             mensagem: "Saída registrada"
             quantidade: 5
       400:
-        description: Estoque insuficiente, quantidade inválida ou produto não encontrado
+        description: Estoque insuficiente, quantidade inválida, estoque mínimo violado ou produto não encontrado
         schema:
           $ref: '#/definitions/Erro'
         examples:
           application/json:
-            erro: "Estoque insuficiente"
+            erro: "Saída negada! Estoque mínimo do produto 'Caixa Isopor' é 10. Estoque atual: 15. Tentativa de saída: 8. Estoque resultante seria: 7."
       401:
         description: Token JWT ausente ou inválido
         schema:
@@ -454,14 +474,16 @@ def api_saida_estoque(id_produto):
     if qtd <= 0:
         return resposta_erro("Quantidade deve ser > 0", 400)
 
+    id_usuario = int(get_jwt_identity())  # Pega ID do usuário do token JWT
+
     try:
-        db.saida_estoque(id_produto, qtd)
+        db.saida_estoque(id_produto, qtd, id_usuario)
     except ValueError as e:
         return resposta_erro(str(e), 400)
     return jsonify({"mensagem": "Saída registrada", "quantidade": qtd}), 200
 
 
-# ---------- CATEGORIAS ----------
+# ---------- CATEGORIAS / LOCAIS / FORNECEDORES (ADMIN) ----------
 
 @api_bp.route("/categorias", methods=["GET"])
 @jwt_required()
@@ -539,6 +561,114 @@ def api_criar_categoria():
 
     resp = db.inserir_categoria(nome)
     return jsonify(resp.data or {}), 201
+
+
+@api_bp.route("/categorias/<int:id_categoria>", methods=["GET"])
+@jwt_required()
+def api_obter_categoria(id_categoria):
+    """
+    Obtém uma categoria específica por ID
+    ---
+    tags:
+      - Categorias
+    security:
+      - Bearer: []
+    parameters:
+      - in: path
+        name: id_categoria
+        type: integer
+        required: true
+        description: ID da categoria
+        example: 1
+    responses:
+      200:
+        description: Categoria encontrada
+        schema:
+          $ref: '#/definitions/Categoria'
+      401:
+        description: Token JWT ausente ou inválido
+        schema:
+          $ref: '#/definitions/Erro'
+      404:
+        description: Categoria não encontrada
+        schema:
+          $ref: '#/definitions/Erro'
+    """
+    resp = db.listar_categorias()
+    categorias = resp.data or []
+    categoria = next((c for c in categorias if c["id"] == id_categoria), None)
+    if not categoria:
+        return resposta_erro("Categoria não encontrada", 404)
+    return jsonify(categoria), 200
+
+
+@api_bp.route("/categorias/<int:id_categoria>", methods=["PUT"])
+@jwt_required()
+def api_atualizar_categoria(id_categoria):
+    """
+    Atualiza uma categoria (apenas administradores)
+    ---
+    tags:
+      - Categorias
+    security:
+      - Bearer: []
+    parameters:
+      - in: path
+        name: id_categoria
+        type: integer
+        required: true
+        description: ID da categoria a ser atualizada
+        example: 1
+      - in: body
+        name: body
+        required: true
+        schema:
+          type: object
+          required:
+            - nome_categoria
+          properties:
+            nome_categoria:
+              type: string
+              example: "Eletrônicos"
+    responses:
+      200:
+        description: Categoria atualizada com sucesso
+        schema:
+          $ref: '#/definitions/Categoria'
+      400:
+        description: nome_categoria é obrigatório
+        schema:
+          $ref: '#/definitions/Erro'
+      401:
+        description: Token JWT ausente ou inválido
+        schema:
+          $ref: '#/definitions/Erro'
+      403:
+        description: Acesso restrito a administradores
+        schema:
+          $ref: '#/definitions/Erro'
+      404:
+        description: Categoria não encontrada
+        schema:
+          $ref: '#/definitions/Erro'
+    """
+    if not require_admin():
+        return resposta_erro("Acesso restrito a administradores", 403)
+
+    dados = request.get_json() or {}
+    nome = dados.get("nome_categoria")
+    if not nome:
+        return resposta_erro("nome_categoria é obrigatório", 400)
+
+    resp = (
+        db.supabase.table("CATEGORIA")
+        .update({"nome_categoria": nome})
+        .eq("id", id_categoria)
+        .execute()
+    )
+    if not resp.data:
+        return resposta_erro("Categoria não encontrada", 404)
+    return jsonify(resp.data[0]), 200
 
 
 @api_bp.route("/categorias/<int:id_categoria>", methods=["DELETE"])
@@ -671,6 +801,114 @@ def api_criar_local():
     return jsonify(resp.data or {}), 201
 
 
+@api_bp.route("/locais/<int:id_local>", methods=["GET"])
+@jwt_required()
+def api_obter_local(id_local):
+    """
+    Obtém um local específico por ID
+    ---
+    tags:
+      - Locais
+    security:
+      - Bearer: []
+    parameters:
+      - in: path
+        name: id_local
+        type: integer
+        required: true
+        description: ID do local
+        example: 1
+    responses:
+      200:
+        description: Local encontrado
+        schema:
+          $ref: '#/definitions/LocalEstoque'
+      401:
+        description: Token JWT ausente ou inválido
+        schema:
+          $ref: '#/definitions/Erro'
+      404:
+        description: Local não encontrado
+        schema:
+          $ref: '#/definitions/Erro'
+    """
+    resp = db.listar_locais_estoque()
+    locais = resp.data or []
+    local = next((l for l in locais if l["id"] == id_local), None)
+    if not local:
+        return resposta_erro("Local não encontrado", 404)
+    return jsonify(local), 200
+
+
+@api_bp.route("/locais/<int:id_local>", methods=["PUT"])
+@jwt_required()
+def api_atualizar_local(id_local):
+    """
+    Atualiza um local de estoque (apenas administradores)
+    ---
+    tags:
+      - Locais
+    security:
+      - Bearer: []
+    parameters:
+      - in: path
+        name: id_local
+        type: integer
+        required: true
+        description: ID do local a ser atualizado
+        example: 1
+      - in: body
+        name: body
+        required: true
+        schema:
+          type: object
+          required:
+            - nome_local
+          properties:
+            nome_local:
+              type: string
+              example: "Filial Sul"
+    responses:
+      200:
+        description: Local atualizado com sucesso
+        schema:
+          $ref: '#/definitions/LocalEstoque'
+      400:
+        description: nome_local é obrigatório
+        schema:
+          $ref: '#/definitions/Erro'
+      401:
+        description: Token JWT ausente ou inválido
+        schema:
+          $ref: '#/definitions/Erro'
+      403:
+        description: Acesso restrito a administradores
+        schema:
+          $ref: '#/definitions/Erro'
+      404:
+        description: Local não encontrado
+        schema:
+          $ref: '#/definitions/Erro'
+    """
+    if not require_admin():
+        return resposta_erro("Acesso restrito a administradores", 403)
+
+    dados = request.get_json() or {}
+    nome = dados.get("nome_local")
+    if not nome:
+        return resposta_erro("nome_local é obrigatório", 400)
+
+    resp = (
+        db.supabase.table("LOCAL_ESTOQUE")
+        .update({"nome_local": nome})
+        .eq("id", id_local)
+        .execute()
+    )
+    if not resp.data:
+        return resposta_erro("Local não encontrado", 404)
+    return jsonify(resp.data[0]), 200
+
+
 @api_bp.route("/locais/<int:id_local>", methods=["DELETE"])
 @jwt_required()
 def api_deletar_local(id_local):
@@ -799,6 +1037,114 @@ def api_criar_fornecedor():
 
     resp = db.inserir_fornecedor(nome)
     return jsonify(resp.data or {}), 201
+
+
+@api_bp.route("/fornecedores/<int:id_fornecedor>", methods=["GET"])
+@jwt_required()
+def api_obter_fornecedor(id_fornecedor):
+    """
+    Obtém um fornecedor específico por ID
+    ---
+    tags:
+      - Fornecedores
+    security:
+      - Bearer: []
+    parameters:
+      - in: path
+        name: id_fornecedor
+        type: integer
+        required: true
+        description: ID do fornecedor
+        example: 1
+    responses:
+      200:
+        description: Fornecedor encontrado
+        schema:
+          $ref: '#/definitions/Fornecedor'
+      401:
+        description: Token JWT ausente ou inválido
+        schema:
+          $ref: '#/definitions/Erro'
+      404:
+        description: Fornecedor não encontrado
+        schema:
+          $ref: '#/definitions/Erro'
+    """
+    resp = db.listar_fornecedores()
+    fornecedores = resp.data or []
+    fornecedor = next((f for f in fornecedores if f["id"] == id_fornecedor), None)
+    if not fornecedor:
+        return resposta_erro("Fornecedor não encontrado", 404)
+    return jsonify(fornecedor), 200
+
+
+@api_bp.route("/fornecedores/<int:id_fornecedor>", methods=["PUT"])
+@jwt_required()
+def api_atualizar_fornecedor(id_fornecedor):
+    """
+    Atualiza um fornecedor (apenas administradores)
+    ---
+    tags:
+      - Fornecedores
+    security:
+      - Bearer: []
+    parameters:
+      - in: path
+        name: id_fornecedor
+        type: integer
+        required: true
+        description: ID do fornecedor a ser atualizado
+        example: 1
+      - in: body
+        name: body
+        required: true
+        schema:
+          type: object
+          required:
+            - nome_fornecedor
+          properties:
+            nome_fornecedor:
+              type: string
+              example: "Fornecedor ABC Ltda"
+    responses:
+      200:
+        description: Fornecedor atualizado com sucesso
+        schema:
+          $ref: '#/definitions/Fornecedor'
+      400:
+        description: nome_fornecedor é obrigatório
+        schema:
+          $ref: '#/definitions/Erro'
+      401:
+        description: Token JWT ausente ou inválido
+        schema:
+          $ref: '#/definitions/Erro'
+      403:
+        description: Acesso restrito a administradores
+        schema:
+          $ref: '#/definitions/Erro'
+      404:
+        description: Fornecedor não encontrado
+        schema:
+          $ref: '#/definitions/Erro'
+    """
+    if not require_admin():
+        return resposta_erro("Acesso restrito a administradores", 403)
+
+    dados = request.get_json() or {}
+    nome = dados.get("nome_fornecedor")
+    if not nome:
+        return resposta_erro("nome_fornecedor é obrigatório", 400)
+
+    resp = (
+        db.supabase.table("FORNECEDOR")
+        .update({"nome_fornecedor": nome})
+        .eq("id", id_fornecedor)
+        .execute()
+    )
+    if not resp.data:
+        return resposta_erro("Fornecedor não encontrado", 404)
+    return jsonify(resp.data[0]), 200
 
 
 @api_bp.route("/fornecedores/<int:id_fornecedor>", methods=["DELETE"])

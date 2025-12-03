@@ -36,6 +36,8 @@ def produtos():
                 id_fornecedor = int(request.form["id_fornecedor"])
                 quantidade = int(request.form.get("quantidade", 0))
                 estoque_minimo = int(request.form.get("estoque_minimo", 0))
+                estoque_maximo = int(request.form.get("estoque_maximo", 999999))  # ADICIONADO!
+                id_usuario = session.get("user_id")  # Pega ID do usuário logado
 
                 db.inserir_produto(
                     nome,
@@ -46,6 +48,8 @@ def produtos():
                     id_fornecedor,
                     quantidade=quantidade,
                     estoque_minimo=estoque_minimo,
+                    estoque_maximo=estoque_maximo,  # ADICIONADO!
+                    id_usuario=id_usuario,  # ADICIONADO!
                 )
                 flash("✅ Produto criado!", "success")
 
@@ -53,14 +57,15 @@ def produtos():
             elif "acao" in request.form:
                 id_produto = int(request.form["id_produto"])
                 acao = request.form["acao"]
+                id_usuario = session.get("user_id")  # Pega ID do usuário logado
 
                 if acao == "entrada":
                     qtd = int(request.form["quantidade_entrada"])
-                    db.entrada_estoque(id_produto, qtd)
+                    db.entrada_estoque(id_produto, qtd, id_usuario)
                     flash(f"✅ +{qtd} unidades!", "success")
                 elif acao == "saida":
                     qtd = int(request.form["quantidade_saida"])
-                    db.saida_estoque(id_produto, qtd)
+                    db.saida_estoque(id_produto, qtd, id_usuario)
                     flash(f"✅ -{qtd} unidades!", "success")
 
             return redirect(url_for("produtos_bp.produtos"))
